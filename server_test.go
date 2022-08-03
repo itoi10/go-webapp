@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func TestRun(t *testing.T) {
+func TestServer_Run(t *testing.T) {
 	// ポート番号を0にすると利用可能なポートを動的に選択してくれる
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
@@ -20,9 +20,13 @@ func TestRun(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	eg, ctx := errgroup.WithContext(ctx)
+	mux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Hello, %s!", r.URL.Path[1:])
+	})
 	// HTTPサーバ起動
 	eg.Go(func() error {
-		return run(ctx, l)
+		s := NewServer(l, mux)
+		return s.Run(ctx)
 	})
 
 	in := "message"
