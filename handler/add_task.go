@@ -62,5 +62,4 @@ func (at *AddTask) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ID entity.TaskID `json:"id"`
 	}{ID: id}
 	RespondJSON(ctx, w, rsp, http.StatusOK)
-
 }
