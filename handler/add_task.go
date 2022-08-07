@@ -6,15 +6,12 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/itoi10/go-webapp/entity"
-	"github.com/itoi10/go-webapp/store"
-	"github.com/jmoiron/sqlx"
 )
 
 // タスク登録
 
 type AddTask struct {
-	DB        *sqlx.DB
-	Repo      *store.Repository
+	Service   AddTaskService
 	Validator *validator.Validate
 }
 
@@ -43,14 +40,8 @@ func (at *AddTask) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}, http.StatusBadRequest)
 		return
 	}
-
-	// タスク設定
-	t := &entity.Task{
-		Title:  b.Title,
-		Status: entity.TaskStatusTodo,
-	}
-	// DBに保存
-	err = at.Repo.AddTask(ctx, at.DB, t)
+	// DB登録処理はAddTaskServiceインターフェースに委譲
+	t, err := at.Service.AddTask(ctx, b.Title)
 	if err != nil {
 		RespondJSON(ctx, w, &ErrResponse{
 			Message: err.Error(),
