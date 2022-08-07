@@ -3,17 +3,18 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/itoi10/go-webapp/entity"
 	"github.com/itoi10/go-webapp/store"
+	"github.com/jmoiron/sqlx"
 )
 
 // タスク登録
 
 type AddTask struct {
-	Store     *store.TaskStore
+	DB        *sqlx.DB
+	Repo      *store.Repository
 	Validator *validator.Validate
 }
 
@@ -45,12 +46,11 @@ func (at *AddTask) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// タスク設定
 	t := &entity.Task{
-		Title:   b.Title,
-		Status:  entity.TaskStatusTodo,
-		Created: time.Now(),
+		Title:  b.Title,
+		Status: entity.TaskStatusTodo,
 	}
-	// 保存
-	id, err := store.Tasks.Add(t)
+	// DBに保存
+	err = at.Repo.AddTask(ctx, at.DB, t)
 	if err != nil {
 		RespondJSON(ctx, w, &ErrResponse{
 			Message: err.Error(),
@@ -60,6 +60,6 @@ func (at *AddTask) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// 正常レスポンス
 	rsp := struct {
 		ID entity.TaskID `json:"id"`
-	}{ID: id}
+	}{ID: t.ID}
 	RespondJSON(ctx, w, rsp, http.StatusOK)
 }
