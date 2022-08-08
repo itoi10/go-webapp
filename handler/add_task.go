@@ -3,17 +3,15 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/itoi10/go-webapp/entity"
-	"github.com/itoi10/go-webapp/store"
 )
 
 // タスク登録
 
 type AddTask struct {
-	Store     *store.TaskStore
+	Service   AddTaskService
 	Validator *validator.Validate
 }
 
@@ -42,15 +40,8 @@ func (at *AddTask) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}, http.StatusBadRequest)
 		return
 	}
-
-	// タスク設定
-	t := &entity.Task{
-		Title:   b.Title,
-		Status:  entity.TaskStatusTodo,
-		Created: time.Now(),
-	}
-	// 保存
-	id, err := store.Tasks.Add(t)
+	// DB登録処理はAddTaskServiceインターフェースに委譲
+	t, err := at.Service.AddTask(ctx, b.Title)
 	if err != nil {
 		RespondJSON(ctx, w, &ErrResponse{
 			Message: err.Error(),
@@ -60,6 +51,6 @@ func (at *AddTask) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// 正常レスポンス
 	rsp := struct {
 		ID entity.TaskID `json:"id"`
-	}{ID: id}
+	}{ID: t.ID}
 	RespondJSON(ctx, w, rsp, http.StatusOK)
 }

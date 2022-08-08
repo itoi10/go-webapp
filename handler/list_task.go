@@ -4,13 +4,12 @@ import (
 	"net/http"
 
 	"github.com/itoi10/go-webapp/entity"
-	"github.com/itoi10/go-webapp/store"
 )
 
 // タスク一覧
 
 type ListTask struct {
-	Store *store.TaskStore
+	Service ListTasksService
 }
 
 type task struct {
@@ -19,10 +18,18 @@ type task struct {
 	Status entity.TaskStatus `json:"status"`
 }
 
-// storeに保存されているタスク一覧を返す
+// DBに保存されているタスク一覧を返す
 func (lt *ListTask) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	tasks := lt.Store.All()
+	// ListTasksServiceインターフェースに取得処理委譲
+	tasks, err := lt.Service.ListTasks(ctx)
+	if err != nil {
+		RespondJSON(ctx, w, &ErrResponse{
+			Message: err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+
 	rsp := []task{}
 	for _, t := range tasks {
 		rsp = append(rsp, task{
