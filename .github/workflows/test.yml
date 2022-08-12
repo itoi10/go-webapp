@@ -4,10 +4,14 @@ on:
     branches:
       - "main"
   pull_request:
+
 name: test
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      PUBLIC_KEY: ${{ secrets.PUBLIC_KEY }}
     services:
       # RDBMSを使ったテストコード実行のため、MySQLコンテナを起動する
       mysql:
@@ -41,6 +45,11 @@ jobs:
     - run: |
         go install github.com/k0kubun/sqldef/cmd/mysqldef@latest
         mysqldef -u todo -p todo -h 127.0.0.1 -P 3306 todo < ./_tools/mysql/schema.sql
+    # go:embedしているファイルがないとテスト失敗するので作成
+    - run: |
+        mkdir ./auth/cert
+        echo -n $SECRET_KEY | base64 --decode > ./auth/cert/secret.pem
+        echo -n $PUBLIC_KEY | base64 --decode > ./auth/cert/public.pem
     - run: go test ./... -coverprofile=coverage.out
     - name: report coverage
       uses: k1LoW/octocov-action@v0
